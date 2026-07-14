@@ -1,0 +1,20 @@
+Bentley3D — experiment data bundle
+==================================
+Unzip at the repository ROOT (folder containing notebooks/, data/, processed_data/).
+Paths are repo-relative and drop back into place.
+
+Included:
+  processed_data/features/                     baseline OBB parquet (Bentley)
+  processed_data/rendered_features/            visual embeddings (DINOv3/SigLIP/DuoDuo/Gemini)
+  processed_data/descriptions/                 VLM descriptions (TF-IDF for catalog)
+  processed_data/gemini_embeddings*/           text embeddings v1-v7
+  processed_data/gemma4_embeddings/            text embeddings (Gemma4 / IFCNet)
+  processed_data/meshes/train/<gid>.obj        the 1,849 annotated-subset meshes
+  data/IFCNetCore/features/  data/IFCNetCore/processed/   IFCNet baseline + embeddings
+  data/metadata.json                           GlobalId -> IfcType -> mesh_filename map
+  data/annotated_metadata.json                 rich per-object IFC metadata (subset)
+  data/annotated_subset.json                   the annotated subset allow-list (1,849)
+  notebooks/data_analysis/results/feature_engineering/engineered_features.parquet
+
+NOT included (only needed to regenerate from scratch): raw IFC submissions,
+full processed_data/meshes (non-subset), processed_data/renders*, IFCNetCore meshes/renders.

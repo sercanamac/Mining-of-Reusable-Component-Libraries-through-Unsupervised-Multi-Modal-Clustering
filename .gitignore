@@ -1,0 +1,16 @@
+data/
+processed_data/
+__pycache__
+target
+.ipynb_checkpoints
+.DS_Store
+
+# Generated experiment outputs — regenerable by re-running the sweeps.
+notebooks/data_analysis/results/
+
+# Autoresearch: feature-proposal search state, proposals, and run artifacts.
+notebooks/data_analysis/feature_engineering/autoresearch/
+notebooks/data_analysis/feature_engineering/runs/
+
+# Data bundles. GitHub rejects files over 100 MB; these are distributed separately.
+*.zip

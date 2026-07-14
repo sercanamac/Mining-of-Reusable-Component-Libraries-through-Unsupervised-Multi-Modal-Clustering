@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBJ Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 0.75rem 1.5rem;
+            background: #16213e;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+
+        .tab {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px 4px 0 0;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover {
+            color: #fff;
+        }
+
+        .tab.active {
+            background: #0f3460;
+            color: #fff;
+            border-bottom-color: #4a90d9;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+
+        button {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            background: #0f3460;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1a4b8c;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .viewer-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #viewer-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .drop-zone {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 52, 96, 0.95);
+            border: 3px dashed #4a90d9;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 5;
+        }
+
+        .drop-zone.active {
+            opacity: 1;
+        }
+
+        .drop-zone-text {
+            font-size: 1.5rem;
+            color: #4a90d9;
+        }
+
+        .status-bar {
+            padding: 0.5rem 1.5rem;
+            background: #16213e;
+            font-size: 0.8rem;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-bar.error {
+            color: #e74c3c;
+        }
+
+        .ifc-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #4a90d9;
+            font-weight: 500;
+        }
+
+        .ifc-badge {
+            background: #0f3460;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+
+        .discovery-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 350px;
+            height: 100%;
+            background: rgba(22, 33, 62, 0.98);
+            border-left: 1px solid #0f3460;
+            display: none;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        .discovery-panel.active {
+            display: flex;
+        }
+
+        .discovery-header {
+            padding: 1rem;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .discovery-header h2 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .discovery-header button {
+            width: 100%;
+            margin-bottom: 0.75rem;
+        }
+
+        .discovery-select {
+            width: 100%;
+            padding: 0.5rem;
+            background: #0f3460;
+            color: #fff;
+            border: 1px solid #1a4b8c;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .discovery-select:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        .folder-status {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(15, 52, 96, 0.3);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .folder-status.loaded {
+            color: #4a90d9;
+        }
+
+        .folder-help {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 0.25rem;
+            font-style: italic;
+        }
+
+        .discovery-nav {
+            padding: 1rem;
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .discovery-nav button {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .discovery-nav .nav-info {
+            flex: 2;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .discovery-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .discovery-item {
+            padding: 0.75rem;
+            margin-bottom: 0.25rem;
+            background: #0f3460;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .discovery-item:hover {
+            background: #1a4b8c;
+        }
+
+        .discovery-item.active {
+            background: #1a4b8c;
+            border-left: 3px solid #4a90d9;
+        }
+
+        .discovery-item .filename {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .discovery-item .global-id {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .help {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(22, 33, 62, 0.95);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            z-index: 2;
+        }
+
+        .help kbd {
+            background: #0f3460;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.7rem;
+        }
+
+        .placeholder {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            color: #666;
+        }
+
+        .placeholder svg {
+            width: 80px;
+            height: 80px;
+            opacity: 0.5;
+        }
+
+        .placeholder p {
+            font-size: 1rem;
+        }
+
+        #file-input,
+        #metadata-input,
+        #folder-input {
+            display: none;
+        }
+
+        .webgpu-warning {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a2e;
+            z-index: 100;
+        }
+
+        .webgpu-warning-content {
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+        }
+
+        .webgpu-warning h2 {
+            color: #e74c3c;
+            margin-bottom: 1rem;
+        }
+
+        .webgpu-warning p {
+            color: #888;
+            line-height: 1.6;
+        }
+
+        .webgpu-warning a {
+            color: #4a90d9;
+        }
+
+        /* Annotation panel */
+        .annotation-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 350px;
+            height: 100%;
+            background: rgba(22, 33, 62, 0.98);
+            border-left: 1px solid #0f3460;
+            display: none;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        .annotation-panel.active {
+            display: flex;
+        }
+
+        /* Retrieval panel */
+        .retrieval-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 100%;
+            background: rgba(22, 33, 62, 0.98);
+            border-left: 1px solid #0f3460;
+            display: none;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        .retrieval-panel.active {
+            display: flex;
+        }
+
+        .retrieval-header {
+            padding: 1rem;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .retrieval-header h2 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .retrieval-search {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .retrieval-search input {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            background: #0f3460;
+            color: #fff;
+            border: 1px solid #1a4b8c;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .retrieval-search input:focus {
+            border-color: #4a90d9;
+        }
+
+        .retrieval-search input::placeholder {
+            color: #666;
+        }
+
+        .retrieval-search button {
+            padding: 0.5rem 1rem;
+            white-space: nowrap;
+        }
+
+        .retrieval-generated {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #0f3460;
+            font-size: 0.75rem;
+            color: #888;
+            display: none;
+        }
+
+        .retrieval-generated .gen-label {
+            color: #4a90d9;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .retrieval-generated .gen-text {
+            color: #aaa;
+            word-break: break-word;
+        }
+
+        .retrieval-status {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            color: #888;
+            text-align: center;
+        }
+
+        .retrieval-status.searching {
+            color: #4a90d9;
+        }
+
+        .retrieval-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .retrieval-item {
+            padding: 0.75rem;
+            margin-bottom: 0.25rem;
+            background: #0f3460;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.8rem;
+        }
+
+        .retrieval-item:hover {
+            background: #1a4b8c;
+        }
+
+        .retrieval-item.active {
+            background: #1a4b8c;
+            border-left: 3px solid #4a90d9;
+        }
+
+        .retrieval-item .ri-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+
+        .retrieval-item .ri-rank {
+            color: #4a90d9;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .retrieval-item .ri-score {
+            color: #888;
+            font-size: 0.7rem;
+        }
+
+        .retrieval-item .ri-type {
+            display: inline-block;
+            background: #1a4b8c;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            color: #4a90d9;
+            margin-bottom: 0.25rem;
+        }
+
+        .retrieval-item .ri-desc {
+            font-size: 0.7rem;
+            color: #999;
+            line-height: 1.3;
+            max-height: 2.6em;
+            overflow: hidden;
+        }
+
+        .retrieval-item .ri-gid {
+            font-size: 0.65rem;
+            color: #666;
+            margin-top: 0.25rem;
+            font-family: monospace;
+        }
+
+        .annotation-header {
+            padding: 1rem;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .annotation-header h2 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .annotation-stats {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #0f3460;
+            font-size: 0.8rem;
+        }
+
+        .annotation-stats .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            color: #aaa;
+        }
+
+        .annotation-stats .stat-value {
+            color: #4a90d9;
+            font-weight: 500;
+        }
+
+        .annotation-progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #0f3460;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .annotation-progress-fill {
+            height: 100%;
+            background: #27ae60;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .annotation-nav {
+            padding: 1rem;
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .annotation-nav button {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .annotation-nav .nav-info {
+            flex: 2;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .annotation-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .annotation-item {
+            padding: 0.75rem;
+            margin-bottom: 0.25rem;
+            background: #0f3460;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            font-size: 0.85rem;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .annotation-item:hover {
+            background: #1a4b8c;
+        }
+
+        .annotation-item.active {
+            background: #1a4b8c;
+            border-left-color: #4a90d9;
+        }
+
+        .annotation-item.selected {
+            border-left-color: #27ae60;
+        }
+
+        .annotation-item.selected.active {
+            border-left-color: #27ae60;
+        }
+
+        .annotation-item .check-indicator {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+
+        .annotation-item.selected .check-indicator {
+            border-color: #27ae60;
+            background: #27ae60;
+            color: #fff;
+        }
+
+        .annotation-item .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .annotation-item .filename {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .annotation-item .global-id {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .annotation-footer {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #0f3460;
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 0.6rem;
+            background: #27ae60;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .export-btn:hover {
+            background: #2ecc71;
+        }
+
+        .export-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .annotation-footer .keyboard-hint {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .annotation-footer .keyboard-hint kbd {
+            background: #0f3460;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.65rem;
+        }
+
+        .tab:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="webgpu-warning" id="webgpu-warning" style="display: none;">
+        <div class="webgpu-warning-content">
+            <h2>WebGPU Not Supported</h2>
+            <p>
+                This viewer requires WebGPU, which is not available in your browser.<br><br>
+                Please use <a href="https://www.google.com/chrome/">Chrome 113+</a>,
+                <a href="https://www.microsoft.com/edge">Edge 113+</a>, or
+                <a href="https://www.mozilla.org/firefox/">Firefox 126+</a>.
+            </p>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>OBJ Viewer</h1>
+        <div class="tabs">
+            <button class="tab active" data-tab="viewer">Viewer</button>
+            <button class="tab" data-tab="discovery" id="discovery-tab" disabled>Discovery</button>
+            <button class="tab" data-tab="annotation" id="annotation-tab" disabled>Annotation</button>
+            <button class="tab" data-tab="retrieval" id="retrieval-tab">Retrieval</button>
+        </div>
+        <div class="controls">
+            <button id="load-metadata-btn">Load Metadata</button>
+            <button id="load-btn">Load OBJ</button>
+            <button id="reset-btn" disabled>Reset Camera (R)</button>
+        </div>
+    </div>
+
+    <div class="viewer-container" id="viewer-container">
+        <canvas id="viewer-canvas"></canvas>
+
+        <div class="placeholder" id="placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            <p>Drop an OBJ file here or click "Load OBJ"</p>
+        </div>
+
+        <div class="drop-zone" id="drop-zone">
+            <span class="drop-zone-text">Drop OBJ file here</span>
+        </div>
+
+        <div class="help" id="help" style="display: none;">
+            <strong>Controls</strong><br>
+            <kbd>Drag</kbd> Rotate<br>
+            <kbd>Scroll</kbd> Zoom<br>
+            <kbd>R</kbd> Reset
+        </div>
+
+        <div class="discovery-panel" id="discovery-panel">
+            <div class="discovery-header">
+                <h2>Discovery Mode</h2>
+                <button id="load-folder-btn" disabled>Select Mesh Folder</button>
+                <div class="folder-help">Note: Browser will show "upload" popup - files actually stay local and are NOT uploaded</div>
+                <div class="folder-status" id="folder-status">No folder selected</div>
+                <select class="discovery-select" id="ifc-type-select">
+                    <option value="">Select IFC Type...</option>
+                </select>
+            </div>
+            <div class="discovery-nav" id="discovery-nav" style="display: none;">
+                <button id="prev-btn">&larr;</button>
+                <div class="nav-info" id="nav-info">0 / 0</div>
+                <button id="next-btn">&rarr;</button>
+            </div>
+            <div class="discovery-list" id="discovery-list"></div>
+        </div>
+
+        <div class="annotation-panel" id="annotation-panel">
+            <div class="annotation-header">
+                <h2>Annotation Mode</h2>
+                <select class="discovery-select" id="annotation-type-select">
+                    <option value="">Select IFC Type...</option>
+                </select>
+            </div>
+            <div class="annotation-stats" id="annotation-stats">
+                <div class="stat-row">
+                    <span>This type:</span>
+                    <span class="stat-value" id="annotation-type-count">0 / 0 selected</span>
+                </div>
+                <div class="stat-row">
+                    <span>Global:</span>
+                    <span class="stat-value" id="annotation-global-count">0 selected across 0 types</span>
+                </div>
+                <div class="annotation-progress-bar">
+                    <div class="annotation-progress-fill" id="annotation-progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="annotation-nav" id="annotation-nav" style="display: none;">
+                <button id="annotation-prev-btn">&larr;</button>
+                <div class="nav-info" id="annotation-nav-info">0 / 0</div>
+                <button id="annotation-next-btn">&rarr;</button>
+            </div>
+            <div class="annotation-list" id="annotation-list"></div>
+            <div class="annotation-footer">
+                <button class="export-btn" id="export-btn" disabled>Export (0 selected)</button>
+                <div class="keyboard-hint">
+                    <kbd>Space</kbd> select &middot; <kbd>&larr;</kbd><kbd>&rarr;</kbd> navigate
+                </div>
+            </div>
+        </div>
+        <div class="retrieval-panel" id="retrieval-panel">
+            <div class="retrieval-header">
+                <h2>Semantic Retrieval</h2>
+                <div class="retrieval-search">
+                    <input type="text" id="retrieval-input" placeholder="Search: e.g. 'office chair with wheels'">
+                    <button id="retrieval-search-btn">Search</button>
+                </div>
+                <label style="font-size: 0.7rem; color: #888; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                    <input type="checkbox" id="retrieval-generate-mode"> LLM rewrite (slower, matches database style)
+                </label>
+            </div>
+            <div class="retrieval-generated" id="retrieval-generated">
+                <div class="gen-label">Generated description:</div>
+                <div class="gen-text" id="retrieval-gen-text"></div>
+            </div>
+            <div class="retrieval-status" id="retrieval-status">Enter a query to search 3D objects</div>
+            <div class="retrieval-list" id="retrieval-list"></div>
+        </div>
+    </div>
+
+    <div class="status-bar" id="status-bar">
+        <span id="status">Initializing WebGPU...</span>
+        <span id="mesh-info"></span>
+        <span class="ifc-info" id="ifc-info" style="display: none;">
+            <span class="ifc-badge" id="ifc-type"></span>
+            <span id="global-id"></span>
+        </span>
+    </div>
+
+    <input type="file" id="file-input" accept=".obj">
+    <input type="file" id="metadata-input" accept=".json">
+    <input type="file" id="folder-input" webkitdirectory directory multiple>
+
+    <script type="module">
+        import init, { init_viewer } from './pkg/obj_viewer.js';
+
+        let viewer = null;
+        let meshLoaded = false;
+        let metadataLoaded = false;
+        let meshFolderLoaded = false;
+        let currentTab = 'viewer';
+        let discoveryObjects = [];
+        let currentDiscoveryIndex = -1;
+        let meshFileRefs = new Map(); // filename -> File object reference
+
+        // Annotation state
+        let annotationObjects = [];        // current type's objects
+        let currentAnnotationIndex = -1;   // current object in list
+        let selectedObjects = new Set();   // GlobalIds (persists across type switches)
+
+        const status = document.getElementById('status');
+        const meshInfo = document.getElementById('mesh-info');
+        const ifcInfo = document.getElementById('ifc-info');
+        const ifcType = document.getElementById('ifc-type');
+        const globalId = document.getElementById('global-id');
+        const statusBar = document.getElementById('status-bar');
+        const placeholder = document.getElementById('placeholder');
+        const help = document.getElementById('help');
+        const resetBtn = document.getElementById('reset-btn');
+        const loadBtn = document.getElementById('load-btn');
+        const loadMetadataBtn = document.getElementById('load-metadata-btn');
+        const loadFolderBtn = document.getElementById('load-folder-btn');
+        const fileInput = document.getElementById('file-input');
+        const metadataInput = document.getElementById('metadata-input');
+        const folderInput = document.getElementById('folder-input');
+        const folderStatus = document.getElementById('folder-status');
+        const dropZone = document.getElementById('drop-zone');
+        const viewerContainer = document.getElementById('viewer-container');
+        const webgpuWarning = document.getElementById('webgpu-warning');
+        const discoveryTab = document.getElementById('discovery-tab');
+        const discoveryPanel = document.getElementById('discovery-panel');
+        const ifcTypeSelect = document.getElementById('ifc-type-select');
+        const discoveryNav = document.getElementById('discovery-nav');
+        const navInfo = document.getElementById('nav-info');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const discoveryList = document.getElementById('discovery-list');
+
+        // Annotation DOM refs
+        const annotationTab = document.getElementById('annotation-tab');
+        const annotationPanel = document.getElementById('annotation-panel');
+        const annotationTypeSelect = document.getElementById('annotation-type-select');
+        const annotationStats = document.getElementById('annotation-stats');
+        const annotationTypeCount = document.getElementById('annotation-type-count');
+        const annotationGlobalCount = document.getElementById('annotation-global-count');
+        const annotationProgressFill = document.getElementById('annotation-progress-fill');
+        const annotationNav = document.getElementById('annotation-nav');
+        const annotationNavInfo = document.getElementById('annotation-nav-info');
+        const annotationPrevBtn = document.getElementById('annotation-prev-btn');
+        const annotationNextBtn = document.getElementById('annotation-next-btn');
+        const annotationList = document.getElementById('annotation-list');
+        const exportBtn = document.getElementById('export-btn');
+
+        // Retrieval DOM refs
+        const retrievalPanel = document.getElementById('retrieval-panel');
+        const retrievalInput = document.getElementById('retrieval-input');
+        const retrievalSearchBtn = document.getElementById('retrieval-search-btn');
+        const retrievalGenerated = document.getElementById('retrieval-generated');
+        const retrievalGenText = document.getElementById('retrieval-gen-text');
+        const retrievalStatus = document.getElementById('retrieval-status');
+        const retrievalList = document.getElementById('retrieval-list');
+
+        function updateStatus(message, isError = false) {
+            status.textContent = message;
+            statusBar.classList.toggle('error', isError);
+        }
+
+        function showMeshLoaded(filename, vertexCount, triangleCount) {
+            meshLoaded = true;
+            placeholder.style.display = 'none';
+            help.style.display = 'block';
+            resetBtn.disabled = false;
+            meshInfo.textContent = `${filename} | ${vertexCount.toLocaleString()} vertices, ${triangleCount.toLocaleString()} triangles`;
+            updateStatus('Ready');
+            updateCurrentMetadata();
+        }
+
+        function updateCurrentMetadata() {
+            if (!viewer || !metadataLoaded) {
+                ifcInfo.style.display = 'none';
+                return;
+            }
+
+            const metadata = viewer.get_current_metadata();
+            if (metadata) {
+                ifcType.textContent = metadata.ifc_type;
+                globalId.textContent = metadata.global_id;
+                ifcInfo.style.display = 'flex';
+            } else {
+                ifcInfo.style.display = 'none';
+            }
+        }
+
+        function loadMetadataFile(file) {
+            updateStatus(`Loading metadata from ${file.name}...`);
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    viewer.load_metadata(e.target.result);
+                    metadataLoaded = true;
+                    discoveryTab.disabled = false;
+                    annotationTab.disabled = false;
+
+                    // Populate IFC type selector
+                    const types = viewer.get_ifc_types();
+                    ifcTypeSelect.innerHTML = '<option value="">Select IFC Type...</option>';
+                    types.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        const count = viewer.get_type_count(type);
+                        option.textContent = `${type} (${count})`;
+                        ifcTypeSelect.appendChild(option);
+                    });
+
+                    // Populate annotation type selector
+                    annotationTypeSelect.innerHTML = '<option value="">Select IFC Type...</option>';
+                    types.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        const count = viewer.get_type_count(type);
+                        option.textContent = `${type} (${count})`;
+                        annotationTypeSelect.appendChild(option);
+                    });
+
+                    updateStatus('Metadata loaded successfully');
+                    updateCurrentMetadata();
+                    loadFolderBtn.disabled = false;
+                } catch (err) {
+                    updateStatus(`Error loading metadata: ${err}`, true);
+                    console.error(err);
+                }
+            };
+            reader.onerror = () => updateStatus('Error reading metadata file', true);
+            reader.readAsText(file);
+        }
+
+        function loadMeshFolder(files) {
+            updateStatus(`Indexing mesh folder...`);
+            meshFileRefs.clear();
+
+            // Filter OBJ files and store references
+            const objFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.obj'));
+
+            if (objFiles.length === 0) {
+                updateStatus('No OBJ files found in folder', true);
+                return;
+            }
+
+            // Store file references by filename
+            objFiles.forEach(file => {
+                meshFileRefs.set(file.name, file);
+            });
+
+            meshFolderLoaded = true;
+            folderStatus.textContent = `${objFiles.length} mesh files available`;
+            folderStatus.classList.add('loaded');
+            updateStatus(`Mesh folder indexed: ${objFiles.length} files`);
+        }
+
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.obj')) {
+                updateStatus('Please select an OBJ file', true);
+                return;
+            }
+
+            updateStatus(`Loading ${file.name}...`);
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    viewer.load_obj(content, file.name);
+
+                    // Count vertices and triangles from content
+                    const lines = content.split('\n');
+                    let vertices = 0, faces = 0;
+                    for (const line of lines) {
+                        if (line.startsWith('v ')) vertices++;
+                        else if (line.startsWith('f ')) faces++;
+                    }
+
+                    showMeshLoaded(file.name, vertices, faces);
+                } catch (err) {
+                    updateStatus(`Error: ${err}`, true);
+                    console.error(err);
+                }
+            };
+            reader.onerror = () => {
+                updateStatus('Error reading file', true);
+            };
+            reader.readAsText(file);
+        }
+
+        function loadDiscoveryObject(metadata) {
+            const filename = metadata.mesh_filename;
+
+            if (!meshFolderLoaded) {
+                updateStatus('Please load mesh folder first', true);
+                return;
+            }
+
+            if (!meshFileRefs.has(filename)) {
+                updateStatus(`Mesh file not found: ${filename}`, true);
+                return;
+            }
+
+            updateStatus(`Loading ${filename}...`);
+
+            // Read the file only when needed
+            const file = meshFileRefs.get(filename);
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    viewer.load_obj(content, filename);
+
+                    // Count vertices and triangles
+                    const lines = content.split('\n');
+                    let vertices = 0, faces = 0;
+                    for (const line of lines) {
+                        if (line.startsWith('v ')) vertices++;
+                        else if (line.startsWith('f ')) faces++;
+                    }
+
+                    showMeshLoaded(filename, vertices, faces);
+                } catch (err) {
+                    updateStatus(`Error loading ${filename}: ${err}`, true);
+                    console.error(err);
+                }
+            };
+
+            reader.onerror = () => {
+                updateStatus(`Error reading ${filename}`, true);
+            };
+
+            reader.readAsText(file);
+        }
+
+        function updateDiscoveryList(selectedType) {
+            discoveryObjects = viewer.get_objects_by_type(selectedType);
+            currentDiscoveryIndex = -1;
+
+            discoveryList.innerHTML = '';
+
+            if (discoveryObjects.length === 0) {
+                discoveryNav.style.display = 'none';
+                discoveryList.innerHTML = '<div style="padding: 1rem; text-align: center; color: #888;">No objects found</div>';
+                return;
+            }
+
+            discoveryNav.style.display = 'flex';
+
+            discoveryObjects.forEach((obj, index) => {
+                const item = document.createElement('div');
+                item.className = 'discovery-item';
+
+                // Check if mesh file is available in the selected folder
+                const isAvailable = meshFileRefs.has(obj.mesh_filename);
+                const availabilityIndicator = isAvailable ? '✓' : '✗';
+                const availabilityColor = isAvailable ? '#4a90d9' : '#e74c3c';
+
+                item.innerHTML = `
+                    <div class="filename">
+                        <span style="color: ${availabilityColor}; margin-right: 0.5rem;">${availabilityIndicator}</span>
+                        ${obj.mesh_filename}
+                    </div>
+                    <div class="global-id">${obj.global_id}</div>
+                `;
+
+                if (!isAvailable) {
+                    item.style.opacity = '0.5';
+                }
+
+                item.onclick = () => {
+                    if (!isAvailable) {
+                        updateStatus(`Mesh file not found: ${obj.mesh_filename}`, true);
+                        return;
+                    }
+                    currentDiscoveryIndex = index;
+                    updateDiscoveryNavigation();
+                    loadDiscoveryObject(obj);
+                };
+                discoveryList.appendChild(item);
+            });
+
+            updateDiscoveryNavigation();
+        }
+
+        function updateDiscoveryNavigation() {
+            if (discoveryObjects.length === 0) {
+                navInfo.textContent = '0 / 0';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                return;
+            }
+
+            const displayIndex = currentDiscoveryIndex + 1;
+            navInfo.textContent = `${displayIndex} / ${discoveryObjects.length}`;
+            prevBtn.disabled = currentDiscoveryIndex <= 0;
+            nextBtn.disabled = currentDiscoveryIndex >= discoveryObjects.length - 1;
+
+            // Update active item in list
+            discoveryList.querySelectorAll('.discovery-item').forEach((item, index) => {
+                item.classList.toggle('active', index === currentDiscoveryIndex);
+            });
+        }
+
+        function navigateDiscovery(direction) {
+            if (discoveryObjects.length === 0) return;
+
+            let newIndex = currentDiscoveryIndex;
+            let attempts = 0;
+            const maxAttempts = discoveryObjects.length;
+
+            // Find next available mesh
+            do {
+                newIndex += direction;
+                newIndex = Math.max(0, Math.min(newIndex, discoveryObjects.length - 1));
+                attempts++;
+
+                // If we've checked all objects or reached boundaries, stop
+                if (attempts > maxAttempts ||
+                    (direction > 0 && newIndex >= discoveryObjects.length - 1) ||
+                    (direction < 0 && newIndex <= 0)) {
+                    break;
+                }
+            } while (!meshFileRefs.has(discoveryObjects[newIndex].mesh_filename));
+
+            currentDiscoveryIndex = newIndex;
+            updateDiscoveryNavigation();
+
+            const obj = discoveryObjects[currentDiscoveryIndex];
+            if (meshFileRefs.has(obj.mesh_filename)) {
+                loadDiscoveryObject(obj);
+            } else {
+                updateStatus(`Mesh file not found: ${obj.mesh_filename}`, true);
+            }
+        }
+
+        // --- Annotation functions ---
+
+        function updateAnnotationList(type) {
+            annotationObjects = viewer.get_objects_by_type(type);
+            currentAnnotationIndex = -1;
+
+            annotationList.innerHTML = '';
+
+            if (annotationObjects.length === 0) {
+                annotationNav.style.display = 'none';
+                annotationList.innerHTML = '<div style="padding: 1rem; text-align: center; color: #888;">No objects found</div>';
+                updateAnnotationStats();
+                return;
+            }
+
+            annotationNav.style.display = 'flex';
+
+            annotationObjects.forEach((obj, index) => {
+                const item = document.createElement('div');
+                item.className = 'annotation-item';
+                if (selectedObjects.has(obj.global_id)) {
+                    item.classList.add('selected');
+                }
+
+                const isAvailable = meshFileRefs.has(obj.mesh_filename);
+
+                item.innerHTML = `
+                    <div class="check-indicator">${selectedObjects.has(obj.global_id) ? '&#10003;' : ''}</div>
+                    <div class="item-info">
+                        <div class="filename">${obj.mesh_filename}</div>
+                        <div class="global-id">${obj.global_id}${!isAvailable ? ' <span style="color:#e74c3c">(no mesh)</span>' : ''}</div>
+                    </div>
+                `;
+
+                if (!isAvailable) {
+                    item.style.opacity = '0.5';
+                }
+
+                item.onclick = () => {
+                    currentAnnotationIndex = index;
+                    updateAnnotationNavigation();
+                    if (isAvailable) {
+                        loadDiscoveryObject(obj);
+                    } else {
+                        updateStatus(`Mesh file not found: ${obj.mesh_filename}`, true);
+                    }
+                };
+                annotationList.appendChild(item);
+            });
+
+            updateAnnotationNavigation();
+            updateAnnotationStats();
+        }
+
+        function updateAnnotationNavigation() {
+            if (annotationObjects.length === 0) {
+                annotationNavInfo.textContent = '0 / 0';
+                annotationPrevBtn.disabled = true;
+                annotationNextBtn.disabled = true;
+                return;
+            }
+
+            const displayIndex = currentAnnotationIndex + 1;
+            annotationNavInfo.textContent = `${displayIndex} / ${annotationObjects.length}`;
+            annotationPrevBtn.disabled = currentAnnotationIndex <= 0;
+            annotationNextBtn.disabled = currentAnnotationIndex >= annotationObjects.length - 1;
+
+            // Update active item in list
+            annotationList.querySelectorAll('.annotation-item').forEach((item, index) => {
+                item.classList.toggle('active', index === currentAnnotationIndex);
+            });
+
+            // Scroll active item into view
+            if (currentAnnotationIndex >= 0) {
+                const activeItem = annotationList.querySelectorAll('.annotation-item')[currentAnnotationIndex];
+                if (activeItem) {
+                    activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            }
+        }
+
+        function navigateAnnotation(direction) {
+            if (annotationObjects.length === 0) return;
+
+            let newIndex = currentAnnotationIndex;
+            let attempts = 0;
+            const maxAttempts = annotationObjects.length;
+
+            do {
+                newIndex += direction;
+                newIndex = Math.max(0, Math.min(newIndex, annotationObjects.length - 1));
+                attempts++;
+                if (attempts > maxAttempts ||
+                    (direction > 0 && newIndex >= annotationObjects.length - 1) ||
+                    (direction < 0 && newIndex <= 0)) {
+                    break;
+                }
+            } while (!meshFileRefs.has(annotationObjects[newIndex].mesh_filename));
+
+            currentAnnotationIndex = newIndex;
+            updateAnnotationNavigation();
+
+            const obj = annotationObjects[currentAnnotationIndex];
+            if (meshFileRefs.has(obj.mesh_filename)) {
+                loadDiscoveryObject(obj);
+            } else {
+                updateStatus(`Mesh file not found: ${obj.mesh_filename}`, true);
+            }
+        }
+
+        function toggleAnnotationSelection() {
+            if (currentAnnotationIndex < 0 || currentAnnotationIndex >= annotationObjects.length) return;
+
+            const obj = annotationObjects[currentAnnotationIndex];
+            const gid = obj.global_id;
+
+            if (selectedObjects.has(gid)) {
+                selectedObjects.delete(gid);
+            } else {
+                selectedObjects.add(gid);
+            }
+
+            // Update the item's visual state
+            const items = annotationList.querySelectorAll('.annotation-item');
+            if (items[currentAnnotationIndex]) {
+                const item = items[currentAnnotationIndex];
+                const isSelected = selectedObjects.has(gid);
+                item.classList.toggle('selected', isSelected);
+                item.querySelector('.check-indicator').innerHTML = isSelected ? '&#10003;' : '';
+            }
+
+            updateAnnotationStats();
+            updateAnnotationDropdownCounts();
+        }
+
+        function updateAnnotationStats() {
+            // Per-type count
+            const currentType = annotationTypeSelect.value;
+            if (currentType && annotationObjects.length > 0) {
+                const typeSelected = annotationObjects.filter(o => selectedObjects.has(o.global_id)).length;
+                annotationTypeCount.textContent = `${typeSelected} / ${annotationObjects.length} selected`;
+            } else {
+                annotationTypeCount.textContent = '0 / 0 selected';
+            }
+
+            // Global stats
+            const totalSelected = selectedObjects.size;
+
+            // Count how many types have at least one selection
+            const typesWithSelections = new Set();
+            if (metadataLoaded) {
+                const allTypes = viewer.get_ifc_types();
+                for (const type of allTypes) {
+                    const objs = viewer.get_objects_by_type(type);
+                    if (objs.some(o => selectedObjects.has(o.global_id))) {
+                        typesWithSelections.add(type);
+                    }
+                }
+                const totalTypes = allTypes.length;
+                annotationGlobalCount.textContent = `${totalSelected} selected across ${typesWithSelections.size}/${totalTypes} types`;
+
+                // Progress bar: percentage of types touched
+                const progress = (typesWithSelections.size / totalTypes) * 100;
+                annotationProgressFill.style.width = `${progress}%`;
+            } else {
+                annotationGlobalCount.textContent = `${totalSelected} selected`;
+                annotationProgressFill.style.width = '0%';
+            }
+
+            // Export button
+            exportBtn.textContent = `Export (${totalSelected} selected)`;
+            exportBtn.disabled = totalSelected === 0;
+        }
+
+        function updateAnnotationDropdownCounts() {
+            if (!metadataLoaded) return;
+            const types = viewer.get_ifc_types();
+            const options = annotationTypeSelect.querySelectorAll('option');
+            options.forEach(opt => {
+                if (!opt.value) return;
+                const type = opt.value;
+                const objs = viewer.get_objects_by_type(type);
+                const totalCount = objs.length;
+                const selCount = objs.filter(o => selectedObjects.has(o.global_id)).length;
+                if (selCount > 0) {
+                    opt.textContent = `${type} (${selCount}/${totalCount} selected)`;
+                } else {
+                    opt.textContent = `${type} (${totalCount})`;
+                }
+            });
+        }
+
+        function exportAnnotations() {
+            if (selectedObjects.size === 0) return;
+
+            // Build export array with GlobalId and IfcType
+            const exportData = [];
+            if (metadataLoaded) {
+                const types = viewer.get_ifc_types();
+                for (const type of types) {
+                    const objs = viewer.get_objects_by_type(type);
+                    for (const obj of objs) {
+                        if (selectedObjects.has(obj.global_id)) {
+                            exportData.push({
+                                GlobalId: obj.global_id,
+                                IfcType: type
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Sort by IfcType then GlobalId
+            exportData.sort((a, b) => a.IfcType.localeCompare(b.IfcType) || a.GlobalId.localeCompare(b.GlobalId));
+
+            const json = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'annotated_subset.json';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            updateStatus(`Exported ${exportData.length} annotated objects`);
+        }
+
+        async function run() {
+            // Check WebGPU support
+            if (!navigator.gpu) {
+                webgpuWarning.style.display = 'flex';
+                updateStatus('WebGPU not supported', true);
+                return;
+            }
+
+            try {
+                // Initialize WASM module
+                await init();
+                updateStatus('Initializing viewer...');
+
+                // Initialize viewer
+                viewer = await init_viewer('viewer-canvas');
+                updateStatus('Ready - Load an OBJ file to begin');
+
+                // Enable UI
+                loadBtn.disabled = false;
+            } catch (err) {
+                updateStatus(`Initialization error: ${err}`, true);
+                console.error(err);
+            }
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                currentTab = tabName;
+
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                discoveryPanel.classList.toggle('active', tabName === 'discovery');
+                annotationPanel.classList.toggle('active', tabName === 'annotation');
+                retrievalPanel.classList.toggle('active', tabName === 'retrieval');
+            });
+        });
+
+        // File input
+        loadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+                e.target.value = ''; // Reset for same file
+            }
+        });
+
+        // Metadata input
+        loadMetadataBtn.addEventListener('click', () => metadataInput.click());
+        metadataInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadMetadataFile(e.target.files[0]);
+                e.target.value = '';
+            }
+        });
+
+        // Folder input
+        loadFolderBtn.addEventListener('click', () => folderInput.click());
+        folderInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadMeshFolder(e.target.files);
+                e.target.value = '';
+            }
+        });
+
+        // IFC type selector
+        ifcTypeSelect.addEventListener('change', (e) => {
+            const selectedType = e.target.value;
+            if (selectedType) {
+                updateDiscoveryList(selectedType);
+            } else {
+                discoveryList.innerHTML = '';
+                discoveryNav.style.display = 'none';
+            }
+        });
+
+        // Discovery navigation
+        prevBtn.addEventListener('click', () => navigateDiscovery(-1));
+        nextBtn.addEventListener('click', () => navigateDiscovery(1));
+
+        // Annotation type selector
+        annotationTypeSelect.addEventListener('change', (e) => {
+            const selectedType = e.target.value;
+            if (selectedType) {
+                updateAnnotationList(selectedType);
+            } else {
+                annotationList.innerHTML = '';
+                annotationNav.style.display = 'none';
+                updateAnnotationStats();
+            }
+        });
+
+        // Annotation navigation
+        annotationPrevBtn.addEventListener('click', () => navigateAnnotation(-1));
+        annotationNextBtn.addEventListener('click', () => navigateAnnotation(1));
+
+        // Export button
+        exportBtn.addEventListener('click', exportAnnotations);
+
+        // Reset camera
+        resetBtn.addEventListener('click', () => {
+            if (viewer) viewer.reset_camera();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Reset camera
+            if ((e.key === 'r' || e.key === 'R') && viewer && meshLoaded) {
+                viewer.reset_camera();
+            }
+
+            // Discovery navigation with arrow keys
+            if (currentTab === 'discovery' && discoveryObjects.length > 0) {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    navigateDiscovery(-1);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    navigateDiscovery(1);
+                }
+            }
+
+            // Annotation navigation + selection
+            if (currentTab === 'annotation' && annotationObjects.length > 0) {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    navigateAnnotation(-1);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    navigateAnnotation(1);
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    toggleAnnotationSelection();
+                }
+            }
+        });
+
+        // Drag and drop
+        viewerContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('active');
+        });
+
+        viewerContainer.addEventListener('dragleave', (e) => {
+            if (!viewerContainer.contains(e.relatedTarget)) {
+                dropZone.classList.remove('active');
+            }
+        });
+
+        viewerContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('active');
+
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // Prevent default drag behavior on document
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => e.preventDefault());
+
+        // ==================== Retrieval ====================
+        let retrievalResults = [];
+        let currentRetrievalIndex = -1;
+
+        async function performSearch(query) {
+            if (!query.trim()) return;
+
+            retrievalSearchBtn.disabled = true;
+            retrievalStatus.textContent = 'Searching...';
+            retrievalStatus.className = 'retrieval-status searching';
+            retrievalGenerated.style.display = 'none';
+            retrievalList.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query.trim(),
+                        top_k: 20,
+                        mode: document.getElementById('retrieval-generate-mode').checked ? 'generate' : 'direct',
+                    }),
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    retrievalStatus.textContent = `Error: ${data.error}`;
+                    retrievalStatus.className = 'retrieval-status';
+                    return;
+                }
+
+                // Show generated description
+                if (data.generated_description) {
+                    retrievalGenText.textContent = data.generated_description;
+                    retrievalGenerated.style.display = 'block';
+                }
+
+                retrievalResults = data.results || [];
+                retrievalStatus.textContent = `${retrievalResults.length} results found`;
+                retrievalStatus.className = 'retrieval-status';
+
+                // Render results
+                retrievalList.innerHTML = '';
+                retrievalResults.forEach((r, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'retrieval-item';
+                    const scorePercent = (r.similarity * 100).toFixed(1);
+                    const descPreview = r.description ? r.description.substring(0, 120) + (r.description.length > 120 ? '...' : '') : '';
+                    item.innerHTML = `
+                        <div class="ri-header">
+                            <span class="ri-rank">#${i + 1}</span>
+                            <span class="ri-score">${scorePercent}%</span>
+                        </div>
+                        ${r.ifc_type ? `<span class="ri-type">${r.ifc_type}</span>` : ''}
+                        <div class="ri-desc">${descPreview}</div>
+                        <div class="ri-gid">${r.global_id}</div>
+                    `;
+                    item.addEventListener('click', () => loadRetrievalResult(i));
+                    retrievalList.appendChild(item);
+                });
+
+            } catch (err) {
+                retrievalStatus.textContent = `Error: ${err.message}`;
+                retrievalStatus.className = 'retrieval-status';
+            } finally {
+                retrievalSearchBtn.disabled = false;
+            }
+        }
+
+        async function loadRetrievalResult(index) {
+            if (index < 0 || index >= retrievalResults.length) return;
+            currentRetrievalIndex = index;
+            const result = retrievalResults[index];
+
+            // Highlight active item
+            retrievalList.querySelectorAll('.retrieval-item').forEach((el, i) => {
+                el.classList.toggle('active', i === index);
+            });
+
+            // Try to load from mesh folder if available
+            const meshFilename = result.mesh_filename || `${result.global_id}.obj`;
+            if (meshFileRefs && meshFileRefs.has(meshFilename)) {
+                const file = meshFileRefs.get(meshFilename);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (viewer) {
+                        viewer.load_obj(e.target.result, meshFilename);
+                        showMeshLoaded(meshFilename, 0, 0);
+                        updateStatus(`Loaded: ${meshFilename}`);
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                updateStatus(`Mesh not in folder: ${meshFilename} — load mesh folder first`);
+            }
+        }
+
+        retrievalSearchBtn.addEventListener('click', () => performSearch(retrievalInput.value));
+        retrievalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') performSearch(retrievalInput.value);
+        });
+
+        // Check retrieval API status on load
+        fetch('/api/status').then(r => r.json()).then(data => {
+            if (data.embeddings_loaded) {
+                retrievalStatus.textContent = `Ready: ${data.num_embeddings} objects indexed`;
+            } else {
+                retrievalStatus.textContent = 'No embeddings loaded on server';
+            }
+        }).catch(() => {
+            retrievalStatus.textContent = 'Server API not available';
+        });
+
+        run();
+    </script>
+</body>
+</html>

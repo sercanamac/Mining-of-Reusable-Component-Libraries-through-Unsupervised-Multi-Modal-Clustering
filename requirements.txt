@@ -1,0 +1,42 @@
+# Core — everything needed to run the clustering experiments.
+# Versions pinned to the working `bentley` environment (Python 3.12).
+numpy==2.3.5
+pandas==2.3.3
+scipy==1.16.3
+scikit-learn==1.7.2
+umap-learn==0.5.9.post2
+numba==0.62.1
+joblib==1.5.2
+tqdm==4.67.1
+
+# Parquet engine. pyarrow is NOT installed; feature files are read via fastparquet.
+fastparquet==2024.11.0
+
+# Geometry / IFC
+ifcopenshell==0.8.4
+trimesh==4.10.0
+pillow==12.0.0
+
+# Plotting
+matplotlib==3.10.7
+seaborn==0.13.2
+
+# Notebooks
+ipykernel==7.1.0
+ipywidgets==8.1.8
+notebook==7.5.4
+
+# ── Optional extras ──────────────────────────────────────────────────────────
+# Not needed to run the experiments: the embeddings and renders they produce are
+# already present under processed_data/. Install only to regenerate from scratch.
+#
+#   Visual embeddings (visual_encoders/extract_dinov3.py, extract_siglip.py):
+# torch
+# torchvision
+# transformers
+#
+#   Scene rendering (render_scenes_batch.py) — also needs an EGL/OSMesa backend:
+# pyrender
+#
+#   VLM descriptions (gemini_descriptions.py):
+# google-genai
