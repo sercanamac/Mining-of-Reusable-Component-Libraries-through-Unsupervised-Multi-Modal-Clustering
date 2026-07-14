@@ -147,12 +147,21 @@ If you use this work, please cite:
 The IFCNetCore benchmark used for the cross-dataset comparison is from:
 
 ```bibtex
-@inproceedings{emunds2021ifcnet,
-  title={IFCNet: A benchmark dataset for IFC entity classification},
-  author={Emunds, Christoph and Pauen, Nicolas and Richter, Veronika and Frisch, J{\'e}r{\^o}me and Van Treeck, Christoph},
-  booktitle={EG-ICE 2021 Workshop on Intelligent Computing in Engineering},
-  volume={166},
-  year={2021},
-  organization={Universit{\"a}tsverlag der TU Berlin}
+@article{DBLP:journals/corr/abs-2106-09712,
+  author       = {Christoph Emunds and
+                  Nicolas Pauen and
+                  Veronika Richter and
+                  J{\'{e}}r{\^{o}}me Frisch and
+                  Christoph van Treeck},
+  title        = {IFCNet: {A} Benchmark Dataset for {IFC} Entity Classification},
+  journal      = {CoRR},
+  volume       = {abs/2106.09712},
+  year         = {2021},
+  url          = {https://arxiv.org/abs/2106.09712},
+  eprinttype   = {arXiv},
+  eprint       = {2106.09712},
+  timestamp    = {Thu, 14 Oct 2021 09:14:24 +0200},
+  biburl       = {https://dblp.org/rec/journals/corr/abs-2106-09712.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
 }
 ```
