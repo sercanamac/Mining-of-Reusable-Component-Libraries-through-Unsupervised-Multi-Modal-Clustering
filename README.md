@@ -108,3 +108,51 @@ The scripts default to the `bentley` dataset. To run the IFCNet comparison inste
 IFCNET_DATASET=ifcnet python notebooks/data_analysis/experiments/P1a_geo_sweep.py
 ```
 
+## Authors
+
+- Mustafa Sercan Amac
+
+## Affiliations
+
+- Chair of Computing in Civil and Building Engineering
+- Chair of Robotics, Artificial Intelligence and Real-time Systems
+- TUM Georg Nemetschek Institute
+- Leonhard Obermeyer Center
+- Technical University of Munich (TUM)
+
+## Acknowledgements
+
+This work was carried out with the guidance and support of:
+
+- Prof. Dr.-Ing. André Borrmann
+- Prof. Dr.-Ing. habil. Alois C. Knoll
+- Panagiotis Petropoulakis, M.Sc.
+- Georgios Pavlidis (Bentley Systems)
+
+Developed in collaboration with Bentley Systems as industry partner.
+
+## Citation
+
+If you use this work, please cite:
+
+```bibtex
+@mastersthesis{amac2026mining,
+  author = {Amac, Mustafa Sercan},
+  title  = {Mining of Reusable Component Libraries through Unsupervised Multi-Modal Clustering},
+  school = {Technical University of Munich},
+  year   = {2026},
+}
+```
+
+The IFCNetCore benchmark used for the cross-dataset comparison is from:
+
+```bibtex
+@inproceedings{emunds2021ifcnet,
+  title={IFCNet: A benchmark dataset for IFC entity classification},
+  author={Emunds, Christoph and Pauen, Nicolas and Richter, Veronika and Frisch, J{\'e}r{\^o}me and Van Treeck, Christoph},
+  booktitle={EG-ICE 2021 Workshop on Intelligent Computing in Engineering},
+  volume={166},
+  year={2021},
+  organization={Universit{\"a}tsverlag der TU Berlin}
+}
+```
