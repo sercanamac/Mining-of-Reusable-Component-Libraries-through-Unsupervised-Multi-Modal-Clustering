@@ -1,8 +1,7 @@
-# Bentley3D
+# Mining of Reusable Component Libraries through Unsupervised Multi-Modal Clustering
 
 Semantic classification of 3D BIM objects via unsupervised multi-modal clustering.
-Geometric, text (VLM description), and visual embeddings are clustered and fused;
-see `CLAUDE.md` for the architecture.
+Geometric, text (VLM description), and visual embeddings are clustered and fused.
 
 ## Setup
 
@@ -28,7 +27,7 @@ containing `notebooks/`, `data/`, and `processed_data/`. Paths inside are repo-r
 drop straight back into place, so no flags and no destination are needed:
 
 ```bash
-cd /path/to/Bentley3D
+cd /path/to/repo
 unzip bentley_experiment_data.zip
 ```
 
